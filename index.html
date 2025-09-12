@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Azure Storage SAS Token Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0 auto;
+            padding: 2em;
+            max-width: 800px;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+        h1, h2 {
+            color: #0078D4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1em 2em;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        label {
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 4px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .checkbox-group label {
+            font-weight: normal;
+            margin-bottom: 0;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+        button {
+            background-color: #0078D4;
+            color: white;
+            padding: 12px 20px;
+            margin-top: 1em;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #005a9e;
+        }
+        #output {
+            margin-top: 2em;
+            padding: 1.5em;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            word-wrap: break-word;
+        }
+        pre {
+            white-space: pre-wrap;
+            background-color: #e3e3e3;
+            padding: 1em;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Azure Storage SAS Token Generator</h1>
+        <p>Fully local and private. Data does not leave your browser.</p>
+
+        <form id="sasForm">
+            <h2>Required Parameters</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="accountName">Storage Account Name:</label>
+                    <input type="text" id="accountName" required placeholder="e.g., myaccount">
+                </div>
+                <div class="form-group">
+                    <label for="accountKey">Storage Account Key:</label>
+                    <input type="password" id="accountKey" required>
+                </div>
+                <div class="form-group">
+                    <label for="containerName">Container Name:</label>
+                    <input type="text" id="containerName" required placeholder="e.g., mycontainer">
+                </div>
+                <div class="form-group">
+                    <label for="blobName">Blob Name (optional):</label>
+                    <input type="text" id="blobName" placeholder="e.g., myfolder/myfile.txt">
+                </div>
+                <div class="form-group full-width">
+                    <label>Permissions:</label>
+                    <div class="checkbox-group" id="permissions">
+                        <label><input type="checkbox" value="l" checked> List</label>
+                        <label><input type="checkbox" value="r" checked> Read</label>
+                        <label><input type="checkbox" value="w"> Write</label>
+                        <label><input type="checkbox" value="d"> Delete</label>
+                        <label><input type="checkbox" value="x"> Delete Version</label>
+                        <label><input type="checkbox" value="y"> Permanent Delete</label>
+                        <label><input type="checkbox" value="a"> Add</label>
+                        <label><input type="checkbox" value="c"> Create</label>
+                        <label><input type="checkbox" value="u"> Update</label>
+                        <label><input type="checkbox" value="p"> Process</label>
+                        <label><input type="checkbox" value="t"> Tag</label>
+                        <label><input type="checkbox" value="f"> Filter</label>
+                        <label><input type="checkbox" value="i"> Set Immutability Policy</label>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label>Signed Resource Types:</label>
+                    <div class="checkbox-group" id="resourceTypes">
+                        <label><input type="checkbox" value="s"> Service</label>
+                        <label><input type="checkbox" value="c" checked> Container</label>
+                        <label><input type="checkbox" value="o" checked> Object</label>
+                    </div>
+                </div>
+                 <div class="form-group">
+                    <label for="startTime">Start Time (UTC):</label>
+                    <input type="datetime-local" id="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="expiryTime">Expiry Time (UTC):</label>
+                    <input type="datetime-local" id="expiryTime" required>
+                </div>
+            </div>
+
+            <h2>Configuration Parameters</h2>
+             <div class="form-grid">
+                <div class="form-group">
+                    <label for="version">SAS Version:</label>
+                    <input type="text" id="version" value="2020-08-04" required>
+                </div>
+                <div class="form-group">
+                    <label>Signed Services:</label>
+                    <div class="checkbox-group" id="services">
+                        <label><input type="checkbox" value="b" checked> Blob</label>
+                        <label><input type="checkbox" value="q"> Queue</label>
+                        <label><input type="checkbox" value="t"> Table</label>
+                        <label><input type="checkbox" value="f"> File</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ipRange">IP Range:</label>
+                    <input type="text" id="ipRange" placeholder="e.g., 168.1.5.60-168.1.5.70">
+                </div>
+                <div class="form-group">
+                    <label for="protocol">Protocol:</label>
+                    <select id="protocol">
+                        <option value="https">https</option>
+                        <option value="https,http">https,http</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="full-width">Generate SAS Token</button>
+        </form>
+
+        <div id="output" style="display:none;">
+            <h2>Results</h2>
+            <h3>SAS Token:</h3>
+            <pre id="sasToken"></pre>
+            <h3>Full SAS URL:</h3>
+            <pre id="sasUrl"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Set default start and expiry times
+        const now = new Date();
+        const startTimeInput = document.getElementById('startTime');
+        const expiryTimeInput = document.getElementById('expiryTime');
+        
+        now.setMinutes(now.getMinutes() - 5);
+        startTimeInput.value = now.toISOString().slice(0, 16);
+
+        now.setHours(now.getHours() + 8, now.getMinutes() + 5);
+        expiryTimeInput.value = now.toISOString().slice(0, 16);
+
+
+        document.getElementById('sasForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            try {
+                // Get values from checkboxes
+                const getCheckedValues = (containerId) => {
+                    const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+                    return Array.from(checkboxes).map(cb => cb.value).join('');
+                };
+
+                // --- 1. GATHER INPUTS ---
+                const accountName = document.getElementById('accountName').value;
+                const accountKey = document.getElementById('accountKey').value;
+                const containerName = document.getElementById('containerName').value;
+                const blobName = document.getElementById('blobName').value;
+                const version = document.getElementById('version').value;
+                const protocol = document.getElementById('protocol').value;
+                const services = getCheckedValues('services');
+                const ipRange = document.getElementById('ipRange').value || '';
+
+                const permissions = getCheckedValues('permissions');
+                const resourceTypes = getCheckedValues('resourceTypes');
+
+
+                const toUTCString = (dateStr) => new Date(dateStr).toISOString().substring(0, 19) + 'Z';
+                const startTime = toUTCString(document.getElementById('startTime').value);
+                const expiryTime = toUTCString(document.getElementById('expiryTime').value);
+
+                // --- 2. CONSTRUCT STRING-TO-SIGN FOR ACCOUNT SAS ---
+                const fields = [
+                    accountName,
+                    permissions,
+                    services,
+                    resourceTypes,
+                    startTime,
+                    expiryTime,
+                    ipRange,
+                    protocol,
+                    version,
+                    '' // A final newline is required
+                ];
+                const stringToSign = fields.join('\n');
+
+                // --- 3. CREATE SIGNATURE (HMAC-SHA256) ---
+                const encoder = new TextEncoder();
+                const keyBytes = Uint8Array.from(atob(accountKey), c => c.charCodeAt(0));
+                
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyBytes,
+                    { name: 'HMAC', hash: 'SHA-256' },
+                    false,
+                    ['sign']
+                );
+
+                const signatureBytes = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(stringToSign));
+                const signedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+
+                // --- 4. ASSEMBLE SAS QUERY PARAMETERS ---
+                const sasParams = new URLSearchParams();
+                sasParams.set('sv', version);
+                sasParams.set('ss', services);
+                sasParams.set('srt', resourceTypes);
+                sasParams.set('sp', permissions);
+                sasParams.set('se', expiryTime);
+                sasParams.set('st', startTime);
+                sasParams.set('spr', protocol);
+                sasParams.set('sig', signedSignature);
+                if (ipRange) sasParams.set('sip', ipRange);
+                
+                const sasToken = sasParams.toString();
+                const fullUrl = `https://${accountName}.blob.core.windows.net/${containerName}` + (blobName ? `/${blobName}` : '') + `?${sasToken}`;
+
+                // --- 5. DISPLAY OUTPUT ---
+                document.getElementById('output').style.display = 'block';
+                document.getElementById('sasToken').textContent = sasToken;
+                document.getElementById('sasUrl').textContent = fullUrl;
+
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+                console.error(error);
+            }
+        });
+    </script>
+
+</body>
+</html>
